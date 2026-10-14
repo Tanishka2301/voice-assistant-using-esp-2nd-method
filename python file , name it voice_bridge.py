@@ -1,3 +1,4 @@
+
 import base64
 import time
 
@@ -15,14 +16,9 @@ RECORD_SECONDS = 5
 speaker = pyttsx3.init()
 
 
-def main():
-    print("\n=== ESP32 GEMINI VOICE ASSISTANT ===")
-    print("Available audio devices:")
-    print(sd.query_devices())
+def handle_question():
+    print("\nRecording for 5 seconds. Speak now!")
 
-    input("\nConnect your earbuds and press Enter to record...")
-
-    print("Recording for 5 seconds. Speak now!")
     recording = sd.rec(
         int(RECORD_SECONDS * SAMPLE_RATE),
         samplerate=SAMPLE_RATE,
@@ -32,12 +28,13 @@ def main():
     sd.wait()
 
     if np.max(np.abs(recording.astype(np.int32))) < 100:
-        print("Warning: recording is very quiet or silent.")
+        print("Recording is very quiet. Please check your microphone.")
+        return
 
     wav_path = "user_audio.wav"
     write(wav_path, SAMPLE_RATE, recording)
 
-    print("Recording saved. Sending audio to ESP32...")
+    print("Sending audio to ESP32...")
 
     with open(wav_path, "rb") as audio_file:
         encoded_audio = base64.b64encode(
@@ -52,15 +49,11 @@ def main():
         )
 
         print("ESP32 HTTP status:", response.status_code)
-        print("ESP32 response:", response.text)
         response.raise_for_status()
 
         data = response.json()
-        answer = data.get("text", "")
-        answer = answer.replace("*", "")
-        answer = answer.replace("#", "")
-        answer = answer.replace("_", "")
-        answer = answer.replace("'", "")
+        answer = data.get("text", "").replace("*", "").strip()
+
         if not answer:
             print("No answer returned:", data)
             return
@@ -68,15 +61,37 @@ def main():
         print("\n=== GEMINI ANSWER ===")
         print(answer)
 
-        print("\nSpeaking through the Windows default output...")
+        print("Speaking through your default audio output...")
         speaker.say(answer)
         speaker.runAndWait()
 
     except requests.exceptions.RequestException as error:
-        print("Connection/request failed:", error)
-        print("Check that the ESP32 is powered on,")
-        print("both devices use the same Wi-Fi,")
-        print("and the ESP32 IP address is correct.")
+        print("Request failed:", error)
+        print("Check ESP32 power, Wi-Fi, IP address and Gemini connection.")
+
+    except Exception as error:
+        print("Error:", error)
+
+
+def main():
+    print("=== ESP32 GEMINI VOICE ASSISTANT ===")
+    print("Connect your earbuds and ensure the ESP32 is running.")
+    print("The assistant will keep listening until you stop it.")
+    print("Press Ctrl+C in this terminal to stop.\n")
+
+    while True:
+        try:
+            handle_question()
+            print("\nPreparing for your next question...")
+            time.sleep(1)
+
+        except KeyboardInterrupt:
+            print("\nVoice assistant stopped.")
+            break
+
+        except Exception as error:
+            print("Unexpected error:", error)
+            time.sleep(2)
 
 
 if __name__ == "__main__":
