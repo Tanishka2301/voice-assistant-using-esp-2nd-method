@@ -1,16 +1,22 @@
-Complete architecture of your ESP32-S3 Gemini Voice Assistant
-Your project combines five main parts: your earbuds, laptop running Python, ESP32-S3, Wi-Fi, and Gemini in the cloud.
-The main idea is that you speak into your laptop's microphone, the audio travels to the ESP32-S3, Gemini processes it, and the answer comes back to your laptop to be spoken through your earbuds.
-Overall architecture
+five main parts: your earbuds, laptop running Python, ESP32-S3, Wi-Fi, and Gemini in the cloud.The main idea is that you speak into your laptop's microphone, the audio travels to the ESP32-S3, Gemini processes it, and the answer comes back to your laptop to be spoken through your earbuds.
+
+ ESP32-S3–Based Gemini AI Voice Assistant:-
+•Technologies: Python, ESP32-S3, C++, Google Gemini API, FastAPI/HTTP, Wi-Fi, NumPy, SoundDevice, pyttsx3
+•Developed a voice assistant that captures user speech through a laptop microphone and processes queries using Google Gemini via an ESP32-S3 HTTP server.
+•Implemented audio recording, WAV file handling, Base64 encoding, and HTTP-based audio transmission between Python and the ESP32-S3.
+•Integrated the Gemini API on the ESP32-S3 to process audio queries and return AI-generated text responses.
+•Implemented text-to-speech using pyttsx3 to deliver spoken responses through the laptop’s audio output or connected earbuds.
+•Designed a continuous interaction loop for repeated voice queries and responses over Wi-Fi.
+
+Overall architecture:-
    Your voice -You speak into the laptop microphone
    Laptop — Python -Records audio, packages it, sends it, receives the answer, and performs TTS
    ESP32-S3-Runs Arduino C++ firmware, receives audio data, sends a request to Gemini, and returns the answer
    Gemini cloud-Understands the submitted audio and generates a text response
    Laptop TTS → earbuds -Python's pyttsx3 turns the returned text into speech
-Important: In your current implementation, the ESP32-S3 does not generate the spoken audio. It returns Gemini's text answer to Python, and Python speaks it.
+   Important: In your current implementation, the ESP32-S3 does not generate the spoken audio. It returns Gemini's text answer to Python, and Python speaks it.
 
-
-Stage 1 — You speak into the laptop microphone
+Stage 1 — You speak into the laptop microphone:-
 You ask a question, for example:
 “What is the capital of Peru?”
 Your laptop microphone converts sound waves into an electrical signal, and the laptop's audio hardware converts that signal into digital audio data.
@@ -21,7 +27,7 @@ This means Python records five seconds of audio at 16,000 samples per second, us
 The recording is saved as user_audio.wav.
 At this point, your voice is audio data, not text.
 
-Stage 2 — Python prepares and sends the audio
+Stage 2 — Python prepares and sends the audio:-
 Python reads the WAV file and converts its binary contents into Base64 text.
 Your code does this:
 with open(wav_path, "rb") as audio_file:    encoded_audio = base64.b64encode(        audio_file.read()    ).decode("ascii")
@@ -37,7 +43,7 @@ http:// — the communication protocol.
 /audio — the endpoint that receives the audio request.
 The audio travels over Wi-Fi from the laptop to the ESP32. It is not sent directly from Python to Gemini.
 
-Stage 3 — The ESP32-S3 receives the request
+Stage 3 — The ESP32-S3 receives the request:-
 Your ESP32 runs firmware written in Arduino C++.
 Its web server listens for incoming HTTP requests. When Python sends a request to /audio, the ESP32:
 Receives the JSON body.
@@ -51,7 +57,7 @@ Audio Base64 length: 213392 characters
 Connecting to Gemini...
 The large body size is normal: Base64 adds some overhead to the original audio data, and the JSON adds a little more.
 
-Stage 4 — The ESP32 communicates with Gemini
+Stage 4 — The ESP32 communicates with Gemini:-
 The ESP32 sends the request to Gemini's cloud API over HTTPS.
 There are two distinct networks involved:
 Local Wi-Fi: laptop ↔ ESP32-S3.
@@ -66,7 +72,7 @@ Answer sent to laptop:
 The capital of Peru is Lima.
 HTTP 200 indicates a successful HTTP request; the returned content still needs to be parsed correctly.
 
-Stage 5 — The ESP32 sends the answer back to Python
+Stage 5 — The ESP32 sends the answer back to Python:-
 After extracting Gemini's text response, your ESP32 returns it to the laptop as JSON:
 {"text":"The capital of Peru is Lima."}
 Python receives this response and parses it:
@@ -74,7 +80,7 @@ data = response.json()answer = data.get("text", "")
 The second line is important because the JSON field is named text, not answer.
 At this point, the answer is back on your laptop as ordinary text.
 
-Stage 6 — Python performs TTS
+Stage 6 — Python performs TTS:-
 TTS means Text-to-Speech. It converts written text into spoken audio.
 Your Python code initializes the speech engine:
 speaker = pyttsx3.init()
